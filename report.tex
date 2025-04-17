@@ -1,0 +1,255 @@
+\documentclass[twocolumn]{article}
+\usepackage{graphicx} % Required for inserting images
+\usepackage{hyperref}
+\usepackage{eurosym}
+\usepackage{amsmath, amssymb}
+\usepackage{float}
+\usepackage{xcolor}
+\usepackage[a4paper,top=2cm,bottom=2cm,left=2cm,right=2cm,marginparwidth=1.75cm]{geometry}
+\newcommand{\later}[1]{\textbf{\textcolor{orange}{#1}}}
+
+\title{\textbf{Data anonymization in the age of AI}}
+\author{Julie Sofie Pettersen, Veronika Podliesnova,\\ Giovanni Guido Capano, Alexis Do}
+\date{March 2025}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This paper presents a literature-based case study on the challenges of anonymizing location data, using the publicly available dataset from London's bike-sharing system as a focal point. Although anonymization is widely used to protect individual privacy, even datasets with removed identifiers can expose personal information when mobility patterns are unique or combined with auxiliary data. We review the evolution of anonymization methods—from early techniques like suppression and aggregation to more recent approaches such as k-anonymity, l-diversity, and differential privacy—with a particular focus on their application to location-based data. Through the London case study, we show how spatio-temporal records can be used to infer sensitive details about individuals, such as home and work locations, despite efforts to anonymize the data. We compare two main techniques: aggregation, which is simple to implement and useful in low-risk settings but can obscure meaningful patterns and remains vulnerable to re-identification; and differential privacy, which provides formal guarantees of protection but requires careful parameter tuning and can reduce the precision of the released data. The paper also reflects on the legal implications of these methods under GDPR, emphasizing the need for more robust and adaptable privacy-preserving strategies as AI-powered inference techniques become more prevalent.
+\end{abstract}
+
+
+\section{Introduction}
+
+Over the last decade, the amount of personal data generated, stored, and analyzed has skyrocketed. People rely on a growing range of online services—like social media platforms, e-commerce sites, and health-tracking apps—that gather vast pools of potentially sensitive information. While such data can be incredibly useful for tailoring services, conducting research, and informing public policy, it also raises critical questions about privacy, consent, and potential misuse~\cite{montjoye2013unique}.
+
+Anonymization, the process of making individual records untraceable back to specific people, has emerged as a key way to address these concerns. Initial efforts often focused on straightforward methods like removing obvious identifiers (pseudonymization) or combining data into broad categories (aggregation). But as re-identification attacks have become more sophisticated—especially when multiple datasets can be cross-referenced—simple anonymization techniques are no longer enough to ensure true privacy. \later{better to keep in background}
+
+Researchers and practitioners have responded by developing more advanced approaches such as k-anonymity, l-diversity, and differential privacy, each offering a different balance between data utility and the risk of revealing personal details. These methods have helped shape modern data-sharing practices, yet practical challenges remain—especially when it comes to handling location-based information, which can be highly revealing even when it seems incomplete~\cite{montjoye2013unique}.
+
+This report focuses on the risks and limitations of current anonymization techniques, particularly when applied to location data. Using a case study from London’s public bike-sharing system, we examine how seemingly harmless datasets can be used to infer personal habits and routines. Through this example, we show how spatio-temporal data is often enough to uniquely identify individuals—despite efforts to anonymize it.
+
+To explore this problem, we focus on two core anonymization strategies: aggregation and differential privacy. Our aim is to evaluate how well each method protects user privacy while maintaining data utility, especially under adversarial conditions. 
+
+We begin with a historical overview of anonymization methods (Section~\ref{Background}) and then introduce real-world threats to location privacy, using the London dataset as a case study (Section~\ref{The Problem}). We then present the two anonymization strategies in more detail (Section~\ref{Methods}), followed by a discussion of our findings and their legal implications (Section~\ref{Results}). The report concludes with reflections and recommendations for balancing privacy with the increasing demand for data-driven insights (Sections~\ref{Conclusion} and~\ref{Final Reflection}).
+
+
+\section{Background} \label{Background}
+
+Anonymization techniques have evolved over the past few decades as the volume of available data has grown and re‑identification attacks have become increasingly sophisticated. Initially, anonymization methods were simplistic, emphasizing suppression techniques and aggregation. But when privacy became more valuable, more complex methods surfaced to provide a better degree of data security. Since geographical identifiers, including location data, can greatly affect the risk of re-identification\later{precise???}, these anonymization techniques have presented both new possibilities and difficulties.
+
+\subsection{Historical Evolution of Anonymization Techniques}
+
+\subsubsection{Anonymizing in the 1990s}
+
+In the 1990s, anonymization mostly relied on two basic tactics: aggregation and suppression, also known as pseudonymization. Aggregation lowered re‑identification risk by lumping many records into broad categories, making it harder to connect any one record to a single person. Suppression, however, simply removed obvious details—names, addresses, and sometimes city or postal codes—to hide identity. Both approaches, however, could still fail when attackers matched the data with other sources, especially those containing location clues about small towns or other small groups.
+
+Laws such as the EU Data Protection Directive (1995) and the Health Insurance Portability and Accountability Act (HIPAA) (1996) at the time recognized anonymizing, but they did not solve the flaws in these approaches. These rules mostly described anonymization without thinking through how readily data could be cross-referenced with outside sources, therefore raising the risk of re-identification.\later{give scourses}
+
+\subsubsection{2000s Advancements: l-Diversity and k-Anonymity}
+
+Using quasi-identifiers including geographic features, k-anonymity—which addressed the danger of re-identification—was first proposed in the early 2000s and guaranteed that every record in a dataset was indistinguishable from at least \(k-1\) other records. However, the method stayed open to several attacks. Particularly when combined with location-specific data, homogeneity attacks—that is, where members of a k-anonymous group share the same sensitive feature, say a rare medical condition—could still make re-identification conceivable.
+
+L-diversity arose as a solution to this problem by guaranteeing that every k-anonymous group included varied sensitive qualities. L-diversity was not perfect even if it lowered some attack danger. Attacks based on semantic similarity where attackers may deduce sensitive traits depending on their proximity including location-based patterns were still a worry. Though progress has been made, the legal systems of the day including HIPAA—did not mandate l-diversity, therefore forcing businesses to rely on less effective privacy policies unable to handle the particular threats presented by geographic data.
+
+\subsubsection{Differential Privacy Emerging Late 2000s and Early 2010s}
+
+Differential privacy first emerged as a more precisely mathematically based privacy-preserving method in the late 2000s. Unlike k-anonymity and l-diversity, which depend on changing dataset structures, differential privacy added controlled noise into statistical searches to ensure that individual contributions could not be differentiated, even if location data was incorporated. Particularly in cases where the dataset included location-based identifiers, this method provided high privacy guarantees. Differential privacy did, however, have certain drawbacks, most notably a decrease in data usefulness and sensitivity to inference assaults by advanced machine learning models, which can, in some situations, undo the privacy assurances.
+
+In light of increasing concerns over data privacy, legal frameworks such as the General Data Protection Regulation (GDPR), which came into effect in 2018, have reinforced the need for robust privacy-preserving methods like differential privacy. GDPR emphasizes the protection of personal data, including location data, and mandates that any identifiable information be processed with adequate safeguards. Differential privacy aligns with the regulation's requirements for anonymization, as it provides strong guarantees that personal information cannot be traced back to individuals, even when location-based data is involved. However, GDPR also requires that data utility not be compromised excessively, and the challenge remains in balancing privacy protection with the need for meaningful analysis.
+
+Major corporations such as Google and Apple started incorporating differential privacy into their systems as the 2010s developed, particularly for location-based data, including user movements or location history. Although this innovation improved privacy, it also highlighted the need for further research since, especially in particular geographical settings, merging several anonymized location records could still allow attackers to extrapolate patterns and re-identify individuals. This growing concern stresses the importance of adhering to evolving legal standards like GDPR while developing more advanced anonymization techniques capable of withstanding both re-identification threats and legal scrutiny.
+\later{add geo method as well}
+\\ \\
+\later{actually even this next whole paragraph is just repeating things we said in the Background, like the limitations of aggregation and l-diversity}
+\subsection{Difficulties in Anonymization Methodologies}
+
+Though anonymizing techniques have advanced, some difficulties still exist, especially with regard to the growing usage of location data. Although at the time useful, aggregation methods were readily avoided when anonymized datasets were merged with outside location-based data. Re-identification became more likely as spatial patterns may identify people, particularly in light of additional demographic or behavioral data.
+
+Though it provided some defense, l-diversity stayed open to similarity-based attacks. Including location data allowed attackers to link geographic proximity with other sensitive information, therefore facilitating the identification of people. Furthermore, the emergence of AI-driven adversarial attacks implies that even differential privacy, which aims to protect the privacy of individual records, is not impervious to inference from intricate machine learning models, especially in situations when several location-based datasets are examined together.
+
+\subsection{Main Research Gaps and Future Approaches}
+\later{//I think we could def just scrape this  next paragraph in the script bec<use it doesn't add anything useful to our project but goes beyond it(focusing on hybrid tecniques and on the limitations of DP itself). It seems a bit out of place to me//}
+%%\later{put together with the part above}
+
+%%Although differential privacy is the most developed method accessible nowadays, problems still exist especially in relation to location-based data. One major problem is that differential privacy sometimes lowers data utility, which makes it challenging to do relevant research keeping strict privacy protections. The demand for more efficient anonymizing methods that maintain both privacy and utility has never been stronger as location data are used in an ever-growing spectrum of applications, from navigation to health monitoring.
+
+%%Furthermore, as artificial intelligence models change, it is imperative to create defenses to stop inference assaults perhaps able to circumvent current anonymizing techniques. One possible answer is the combination of hybrid systems including differential privacy, l-diversity, and k-anonymity. Researchers could build more strong privacy-preserving models by using the strengths of these approaches, hence reducing the re-identification risk especially in datasets with sensitive location-based information.
+
+
+\section{Case study/problem description} \label{The Problem}
+
+As previously mentioned, the amount of digital information continues to grow—from health records and consumer data to social media posts—privacy risks are becoming increasingly difficult to handle. These new risks can lead to serious consequences such as discrimination, identity theft, or threats to personal safety if re-identification is successful.  
+
+Moreover, many privacy concerns arise from data that might initially seem harmless, such as general activity logs or aggregate usage patterns. Even if explicit identifiers (e.g., names, phone numbers) are stripped away, residual information—like timestamps, interaction patterns, or distinctive user behaviors—can still enable re-identification when cross-referenced with additional datasets.
+
+\subsection{Location Data}
+
+Location data can be surprisingly revealing because human mobility patterns are highly unique. Even when personal identifiers such as names or phone numbers are removed, just a few recorded data points—such as a person’s location at home, work, or specific times of day—can be sufficient to re-identify individuals. This uniqueness stems from the fact that while many people may visit the same neighborhoods, workplaces, or public places, the precise combination of locations and their associated timestamps create a distinct and recognizable movement pattern, much like a fingerprint. As a result, an individual’s mobility data can often be linked back to them, raising significant privacy concerns.
+
+A study by de Montjoye et al. (2013) demonstrated the ease with which individuals can be re-identified using location traces. The researchers found that just four spatio-temporal data points were sufficient to uniquely identify 95\% of individuals in a dataset containing mobility records from 1.5 million mobile phone users. Even with only two data points, more than half of the users could be accurately re-identified. Furthermore, the study highlighted that this re-identification capability remains robust even when spatial and temporal resolutions are reduced, following a slow power-law decay in uniqueness. This means that anonymizing location data by reducing its precision may not be sufficient to protect user identities, as the underlying uniqueness of human mobility persists even at coarser scales~\cite{montjoye2013unique}.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\linewidth]{commuterX_morning.jpg}
+    \caption{Morning commuting patterns of an individual cyclist inferred from London bike-sharing data. The routes suggest likely home and work locations.}
+    \label{fig:commuterX_morning}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\linewidth]{commuterX.jpg}
+    \caption{Full cycling activity of the same individual over a longer time period, illustrating patterns that can reveal social and personal routines.}
+    \label{fig:commuterX_full}
+\end{figure}
+
+
+\subsubsection{London's public bike data}
+
+The Transport for London (TfL) bicycle hire scheme dataset demonstrates significant privacy vulnerabilities. Despite being publicly available, this dataset contains unique customer identifiers along with start/end locations and timestamps for each journey over a six-month period (2012–2013).
+
+As illustrated in Figures~\ref{fig:commuterX_morning} and~\ref{fig:commuterX_full}, the author was able to analyze journey patterns of individual cyclists, creating visualizations that revealed detailed behavioral patterns. For "Commuter X," the author could infer their probable home location (Limehouse), workplace (Kings Cross), and social connections (Bethnal Green/Mile End areas) simply by analyzing journey frequencies, times, and routes. By filtering journeys to specific time periods (4:00am–10:00am), commuting patterns became even more apparent. As the author notes, "Any seemingly innocuous personal signal would be enough to get a detailed record for someone's life in London [...] traveling to work, meeting up with friends, secret trysts, drug deals — details of any of these supposedly private aspects of our lives can be exposed." This demonstrates how location data can reveal sensitive information about individuals without their knowledge or consent.
+
+The example further demonstrates the richness of information available through another profile visualization, described as a "complex bike journey map" that represents "something of significance to the cyclist" at each connection point. This map effectively functions as a "digital fingerprint" that could easily be linked to personally identifiable information, creating "a window on this person's life." Research has consistently shown that very few location points are needed to uniquely identify individuals. This connects directly to findings that as few as four spatiotemporal points can be sufficient to uniquely identify 95\% of individuals in a mobility dataset~\cite{montjoye2013unique}.
+To address those vulnerabilities, several privacy-enhancing techniques could be used, such as differential privacy, whose application to this particular problem is explored later in the report.
+
+\later{//I don't believe this next paragraph is necessary as it anticipates the results in a detailed way. I added a line in the previous one that just introduces generally the Differential Privacy approach we will talk about later.// }\\
+To address those vulnerabilities, several privacy-enhancing techniques could be used. Differential privacy would introduce calibrated random noise to the TfL dataset, ensuring that the presence or absence of any individual cyclist would not significantly affect query results. This approach could preserve overall journey patterns for transport planning while protecting individual privacy. However, it would reduce data utility for fine-grained analyses, potentially obscuring important patterns for infrastructure planning. Data censoring offers another approach, where sensitive location points like home and workplace stations could be removed or generalized. For the TfL dataset, this might involve removing the unique customer identifiers entirely or generalizing start/end locations to larger geographic areas. While this would reduce re-identification risk, it might also limit the dataset's usefulness for understanding individual journey patterns. Privacy by aggregation appears most appropriate for the TfL use case. Rather than releasing individual-level journey records, TfL could publish aggregated statistics showing how many cyclists traveled between stations during various time periods.
+
+
+
+\subsection{GDPR and Location Data}
+
+Under GDPR, location data classified as personal information is either directly or indirectly able to identify a person. Article 4(1) of GDPR states personal data as "any information relating to an identified or identifiable natural person" \cite{gdpr_text}. GPS coordinates, IP addresses, and Wi-Fi signals make geolocation data—that which tracks user movements and behaviors—fit this criteria. Companies compiling or using location data have to adhere strictly to data security guidelines.
+
+\subsubsection{Key Compliance Requirements}
+
+Geolocation data processing companies must adhere to fundamental GDPR guidelines, including lawfulness, fairness, and transparency. Users must be informed about the data collected, its intended use, and their rights, as mandated by Article 6~\cite{article6_gdpr}. The principle of data minimization requires that only the necessary location data be collected and stored, in accordance with Article 5(1)(c)~\cite{article5_gdpr}. Additionally, Article 5(1)(e) states that data should not be retained for longer than required for its original purpose.  
+
+To prevent unauthorized access, location data should be anonymized and encrypted, as outlined in Article 32~\cite{article32_gdpr}. Furthermore, Article 9 specifies that special categories of personal data, such as location data that may reveal racial or health information, require additional safeguards~\cite{article9_gdpr}. Recital 26 clarifies that anonymized data falls outside the scope of the GDPR if it cannot reasonably be linked to an individual, underscoring the importance of robust de-identification techniques to mitigate compliance risks~\cite{recital26_gdpr}.  
+
+\subsubsection{Consequences of Non-Compliance}
+
+Failure to comply with the GDPR can result in significant financial penalties. There are two levels of administrative fines: minor infringements may lead to penalties of up to \EUR{10} million or 2\% of the company’s annual global revenue, whereas major violations—such as failing to obtain consent or improperly sharing data—can result in fines of up to \EUR{20} million or 4\% of annual global revenue, as stated in Article 83~\cite{article83_gdpr}. These strict penalties highlight the necessity of compliance, particularly in the context of handling sensitive geolocation data.  
+
+\subsubsection{Mitigating GDPR Risks in Location Data Processing}
+
+To minimize GDPR-related risks, companies should implement privacy-preserving strategies. One effective approach is differential privacy, where statistical noise is added to location data to prevent re-identification. Another method is aggregation, which involves grouping location data into broader, less precise regions instead of tracking individuals.  
+
+Businesses should also establish explicit consent mechanisms, ensuring that users actively opt in to data collection. Additionally, implementing strict access control policies is crucial, restricting geolocation data access to only authorized personnel. These measures not only help organizations maintain GDPR compliance but also enhance consumer privacy protection.  
+
+
+
+\section{Methodologies/Approach} \label{Methods}
+
+
+\subsection{Aggregation}
+
+Aggregation-based anonymization addresses our research problem by grouping individual location records into larger spatial units, thereby obscuring the precise position of each point. In this approach, rather than reporting each sensitive location individually, the data are combined into coarser regions, and summary statistics such as counts or centroids are computed. For instance, given a set of individual observations 
+\(
+X = \{x_1, x_2, \ldots, x_n\},
+\)
+and a region \(A\), the aggregated value \(x_A\) for area \(A\) is computed as:
+\[
+x_A = \frac{1}{\sum_{i=1}^{n} \mathbb{I}_{A}(x_i)}\sum_{i=1}^{n} x_i\, \mathbb{I}_{A}(x_i),
+\]
+where \(\mathbb{I}_{A}(x_i)\) is the indicator function that equals 1 if \(x_i \in A\) and 0 otherwise. This methodology is appealing due to its simplicity and the intuitive nature of its visualization and interpretation.
+
+However, while aggregation is straightforward to implement and can be effective when data are grouped into sufficiently large units, it does not provide a formal, quantifiable privacy guarantee. As a consequence, it is vulnerable to re-identification attacks, particularly when aggregated results can be linked with external or auxiliary datasets. Furthermore, the process of aggregation tends to lose much of the fine-grained information contained in the original data, which means that important subgroups cannot be easily identified. This limitation is especially critical when dealing with sensitive locations, which may still be inferable even after aggregation. For these reasons, although aggregation offers a useful baseline and can be sufficient in scenarios where the risk of re-identification is low, it may not be adequate for applications requiring stringent privacy protections \cite{sweeney2002}.
+
+
+
+\subsection{Differential Privacy}
+
+Differential privacy, specifically implemented via geo-indistinguishability, offers substantial advantages over traditional aggregation methods for anonymizing sensitive location data. Traditional aggregation approaches obscure individual locations by combining them into coarse geographic cells; however, this may unintentionally reveal the presence of spatially clustered sensitive locations, such as military installations, making them vulnerable to identification through spatial inference.
+
+In contrast, geo-indistinguishability provides a more robust approach by adding carefully calibrated random noise to the true location coordinates, ensuring plausible deniability at all spatial scales. Formally, geo-indistinguishability is defined as a variant of differential privacy tailored explicitly for geographic data: a randomized mechanism $K$ satisfies geo-indistinguishability if, for any two locations $x, x' \in \mathbb{R}^2$ and any output location $z \in \mathbb{R}^2$, the following inequality holds:
+
+\begin{equation}
+\frac{\mathbb{P}(K(x) = z)}{\mathbb{P}(K(x') = z)} \leq e^{\epsilon \cdot d(x,x')}
+\end{equation}
+
+where $d(x,x')$ is a spatial distance metric (e.g., Euclidean distance), and $\epsilon$ is the privacy parameter controlling the level of indistinguishability per unit distance.
+
+Practically, geo-indistinguishability is typically implemented through a \textit{planar Laplace noise mechanism}, where noise is sampled from a two-dimensional Laplace distribution centered at the real location $x$. The probability density function for generating a perturbed location $z$ given the original location $x$ is:
+
+\begin{equation}
+f(z \mid x, \epsilon) = \frac{\epsilon^2}{2\pi} e^{-\epsilon \cdot d(x,z)}
+\end{equation}
+
+This ensures that the probability of reporting a noisy location decreases exponentially as the distance from the true location increases, providing rigorous privacy guarantees. For clusters of sensitive locations, geo-indistinguishability is particularly advantageous because it prevents adversaries from confidently inferring both individual base positions and the presence or shape of entire clusters. Unlike aggregation, geo-indistinguishability preserves finer-grained geographic details while preventing sensitive spatial patterns from being reconstructed, effectively balancing data utility with stringent privacy requirements.
+
+
+\section{Results/Discussion} \label{Results}
+
+\subsection{London Bike Example}
+
+\subsubsection{Aggregation}
+In the London bike dataset, raw trip records and station usage statistics allowed researchers to infer detailed information about individual users’ travel routines~\cite{London}. By applying an aggregation-based approach, one could significantly reduce the risk of such re-identification. For instance, rather than releasing the exact start and end points for each ride, the data could be grouped into broader spatio-temporal clusters—such as aggregated station zones or hourly time blocks. This grouping would mask specific trip trajectories, making it harder to link any single ride to a particular individual.
+
+However, the effectiveness of aggregation depends heavily on how it is implemented. Choosing appropriate spatial and temporal resolutions is not trivial, as these decisions directly affect both privacy and data utility. In this case, aggregating bike rides by station zone and hour makes it difficult to track individuals’ daily routines, especially those who consistently ride outside of peak hours or to less frequented stations. For example, if one wanted to analyze the commuting behavior of night-shift workers or detect social trips made in the evenings, these patterns might be lost in the aggregated data. The loss of granularity in both time and space means that certain types of inference—like identifying changes in personal behavior over time—become difficult or even impossible.
+
+This illustrates a central challenge with aggregation: while it can reduce privacy risks, it also suppresses the subtle signals in the data that researchers may rely on for meaningful insights. Furthermore, aggregation provides no formal privacy guarantee. Attackers with access to auxiliary data—such as knowledge of someone’s typical departure time or frequently used routes—might still narrow down the identity of a user. This ongoing vulnerability highlights the need for more robust anonymization techniques that can maintain analytical value while offering clearer protection guarantees.
+
+\subsubsection{Differential Privacy}
+An improvement over basic aggregation in the London bike dataset would be the application of differential privacy to the release of usage statistics. Instead of only grouping data into zones or time windows, differential privacy introduces mathematically calibrated random noise to query results, such as the number of rides between two areas during a specific time period. This ensures that the presence or absence of any single individual in the dataset has a minimal influence on the published output.
+
+For example, if planners wish to understand how many people cycle from residential zones to the city center during early morning hours, differential privacy allows these counts to be published with slight random variations that prevent any single commuter’s data from being singled out. In contrast to aggregation alone, this technique can preserve finer spatial and temporal details, enabling more nuanced analyses—such as detecting shifts in peak-hour traffic patterns or assessing the effects of infrastructure or regulatory changes on specific route segments.
+
+Crucially, differential privacy offers formal, quantifiable guarantees about disclosure risk. This makes it particularly suitable for datasets like the London bike data, where even a few spatio-temporal data points can uniquely identify individuals. By using mechanisms such as geo-indistinguishability or the LPT-DP-k approach, which incorporate spatial distance into the noise generation process, one can strike a better balance between protecting individual privacy and preserving patterns in the data. In practice, these techniques could be implemented in open data portals run by public agencies, ensuring that mobility data remains both useful and compliant with data protection expectations.\\
+\later{Next paragraph is also repetitive, as it just generally frames the improvements of differential provacy in theory, which are already mentioned in the methodology paragraph. I would just put the Experimental Analysis from the old.tex(maybe shortened) and a brief conclusion stemming from that}\\
+\subsection{Theoretical Results}
+Theoretically, differential privacy—particularly when implemented using geo-indistinguishability—offers a robust framework for protecting individuals in location-based datasets \cite{andres2013geo}. Unlike traditional techniques such as aggregation or suppression, differential privacy provides formal mathematical guarantees that the inclusion or exclusion of any individual’s data will not significantly affect the output of an analysis. This is especially relevant in the context of GDPR, which emphasizes the irreversibility of anonymization and the inability to re-identify subjects through reasonable means.
+
+From a theoretical standpoint, one of the key strengths of differential privacy is its adaptability across varying spatial scales. The geo-indistinguishability framework introduces noise that scales with distance, allowing it to offer privacy guarantees that degrade smoothly over space. This allows data users to perform useful computations at a broad spatial level while still preserving individual privacy. Moreover, differential privacy is composable, meaning that its privacy guarantees can be carefully managed even when multiple queries are run on the same dataset. This makes it a flexible tool for applications that require iterative or multi-step analysis, such as urban planning or epidemiological studies.
+
+However, the theoretical guarantees also come with trade-offs. Differential privacy introduces randomness into the data, and when implemented improperly or with too small a privacy budget, the result can be a substantial loss of utility \later{ref}. Selecting appropriate parameters, especially the privacy budget $\varepsilon$, remains a challenging and context-dependent task. Theoretically, small values of $\varepsilon$ ensure stronger privacy but result in noisier outputs, while larger values compromise privacy for increased utility. Balancing this trade-off is not straightforward and often requires domain-specific calibration, making the practical implementation of theoretically sound techniques non-trivial.
+
+\subsection{Experimental Results} 
+
+\later{rework this, fix placing in the report}
+The experimental results from Liu et al.~\cite{liu2018} demonstrate that their proposed LPT-based differential privacy mechanism performs effectively in real-world settings. Across a range of conditions—including varying privacy budgets, pattern sizes, and dataset sizes—the method consistently achieves strong utility while preserving privacy. Notably, the extraction efficiency increases with larger $\varepsilon$ values, as expected, and the noise addition preserves overall location distribution patterns. Compared to other differential privacy mechanisms, the method shows lower error rates and maintains higher utility, particularly for larger values of $k$. Furthermore, the false rejection rate (FRR) remains low across different configurations, reinforcing the method's robustness. These empirical results provide strong practical support for the feasibility of using differential privacy to protect location data without severely compromising data utility.
+
+While the results are promising, some limitations of the experimental approach should be acknowledged. The datasets used—such as Gowalla's check-in data \later{not understandable without context}—represent specific user behavior patterns that may not generalize to other types of mobility or sensitive location data. For example, high-frequency GPS logs, ride-hailing trip histories, or health-related movement data may require different treatment due to their higher temporal resolution or denser coverage. Moreover, the evaluation primarily focused on performance metrics such as extraction efficiency and error rates, without extensive testing against adversarial models designed to breach privacy. Incorporating such threat models in future experiments could provide a more realistic assessment of the technique's resilience to modern re-identification attacks.
+
+
+
+
+\subsection{Compliance with GDPR and Legal Principles}
+The General Data Protection Regulation provides specific guidelines on how to handle personal data, including requirements for anonymization, privacy by design, and accountability. The LPT-DP-k method satisfies these principles in several ways. First, by applying differential privacy from the outset, the data is altered in such a way that individual identities cannot be reasonably re-identified, aligning with GDPR’s definition of anonymized data under Recital 26 \later{ref}. Second, this method naturally supports the principle of data minimization, as it limits both the granularity and the certainty of individual data points. Third, the ability to set and adjust a formal privacy parameter allows organizations to make explicit, auditable choices about the level of protection they provide, which supports transparency and accountability under Articles 5 and 32 \later{ref}. \later{check that the laws referenced are the correct ones}
+
+Furthermore, differential privacy allows for robust compliance strategies in scenarios involving repeated data releases. Since the privacy loss is cumulative and quantifiable, organizations can track their privacy budget over time, helping them stay within the bounds of legal and ethical obligations. This is particularly important for public sector entities releasing datasets at regular intervals for transparency or research purposes.
+
+Nevertheless, compliance is not guaranteed by technology alone. Legal interpretations of what qualifies as sufficiently anonymous data continue to evolve, and there may be practical challenges in communicating the nuances of differential privacy to decision-makers, auditors, or individuals whose data is being processed. Future regulatory guidance could help clarify how formal methods like differential privacy should be integrated into data protection impact assessments or certification frameworks. Continued exploration of this intersection between legal and technical perspectives remains essential for developing privacy solutions that are both effective and compliant.
+
+
+\later{add a part that talks about generalizarion of the results to other applications}
+
+
+\section{Conclusion} \label{Conclusion}
+\later{I think we should mention something more specific from the experimental results here as it's all very vague and just kind of repeating what we have been saying from the start about differential privacy.}\\
+The case study of London's public bike-sharing dataset illustrates the ongoing challenges of anonymizing location data in a way that balances privacy with analytical utility. Our review shows that traditional techniques like aggregation can provide a basic layer of protection but are often inadequate in high-risk scenarios, especially when combined with external information. These methods may also obscure valuable patterns in the data, limiting their usefulness for research or policy evaluation.
+
+Differential privacy, particularly in its geo-indistinguishability form, offers a more rigorous framework for location data anonymization. By introducing mathematically calibrated noise, it provides formal guarantees that individual contributions remain private, even in the presence of auxiliary data. However, implementing differential privacy effectively requires careful parameter tuning and thoughtful management of the trade-off between privacy and utility.
+
+From both a technical and legal perspective, our findings reinforce the need for stronger privacy-preserving methods, particularly as datasets become increasingly complex and adversaries more capable. While differential privacy shows great promise, further research is needed to ensure its robustness against emerging threats, including AI-driven inference attacks. Additionally, legal frameworks such as the GDPR provide a necessary but evolving backdrop, requiring ongoing dialogue between technologists, policymakers, and legal experts.
+
+Ultimately, achieving meaningful data anonymization—especially for location-based information—demands not only technical innovation but also clear standards, transparent decision-making, and an awareness of the social and ethical implications of data use in an increasingly connected world.
+
+
+\section{Final Reflection} \label{Final Reflection}
+
+This case study highlights how even well-intentioned efforts to anonymize data can fall short when confronted with the realities of human mobility and the analytical power of modern tools. Working through the London bike-sharing example gave us a clearer understanding of the tradeoffs between preserving privacy and retaining utility—especially in datasets where spatio-temporal traces are inherently identifying. It also emphasized the importance of thinking critically about how anonymization techniques are applied in practice, not just how they are defined in theory. As we explored legal frameworks like the GDPR, it became clear that technical solutions must be paired with careful regulatory interpretation and clear communication about the risks and limitations of anonymized data. This project has deepened our appreciation for interdisciplinary approaches to privacy and the need for continued research at the intersection of law, computation, and society.
+
+\bibliographystyle{unsrt}
+\bibliography{references}
+
+\end{document}
+
+Fix structure
+Add aims in introduction
+Generalizations
+Remove repetitions
+
